@@ -1,0 +1,28 @@
+name: Deploy Lambda via Spacelift
+on:
+  workflow_call:
+    inputs:
+      function-name:
+        required: true
+        type: string
+      stack:
+        required: true
+        type: string
+    secrets:
+      spacelift-api-key-id:
+        required: true
+      spacelift-api-key-secret:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    container: 252494810635.dkr.ecr.us-east-2.amazonaws.com/cloudposse/infra-live:latest
+    steps:
+    - name: Trigger Spacelift Stack Execution
+      env:
+        SPACELIFT_API_ENDPOINT: https://cloudposse.app.spacelift.io
+        SPACELIFT_API_KEY_ID: ${{ secrets.spacelift-api-key-id }}
+        SPACELIFT_API_KEY_SECRET: ${{ secrets.spacelift-api-key-secret }}
+      run: |
+        spacectl stack deploy --id ${{ inputs.stack }}-lambda-${{ inputs.function-name}} --tail

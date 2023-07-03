@@ -1,0 +1,6 @@
+.build-harness
+build-harness/
+.idea
+*.iml
+shell.nix
+__pycache__
