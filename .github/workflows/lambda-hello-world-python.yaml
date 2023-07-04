@@ -5,14 +5,14 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths:
-    - lambda/**
+    - hello-world-python/**
     - .github/workflows/lambda-hello-world-python.yaml
   # Pushes to the mainline branch (main) trigger a publish and deploy to staging
   push:
     branches:
     - main
     paths:
-    - lambda/**
+    - hello-world-python/**
     - .github/workflows/lambda-hello-world-python.yaml
 
 jobs:
