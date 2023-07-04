@@ -32,7 +32,7 @@ jobs:
     if: ${{ github.event_name == 'push' }}
     with:
       function-name: hello-world-python
-      source-folder: lambda
+      source-folder: hello-world-python
       artifacts-bucket-and-prefix: cplive-core-ue1-public-lambda-artifacts/stage/staging/lambda/
       aws-region: us-east-2
     secrets:
