@@ -11,15 +11,13 @@ on:
       aws-region:
         required: true
         type: string
+    secrets:
       cicd-role-arn:
         required: true
-        type: string
       staging-role-arn:
         required: true
-        type: string
       prod-role-arn:
         required: true
-        type: string
 
 permissions:
   id-token: write
