@@ -30,6 +30,27 @@
 
 Example Python application deployed on AWS Lambda with Github Actions.
 
+## What
+This example has two primary workflows, `lambda-hello-world-python.yaml` and
+`promote-lambda-hello-world-python.yaml`. The first workflow is triggered on
+PRs and pushes to the `main` branch. It builds the application and puts it into an
+s3 bucket, then updates ssm variables for the application. The second workflow
+is triggered on a release. It does not build the application, but rather just copies
+the application from the staging s3 bucket to the production s3 bucket and updates
+the ssm variables for the application.
+
+## How
+There are three supporting github actions that are prefixed with `reusable`. These
+break down the tasks for managing lambda applications.
+
+## Getting Started
+To get started, you will need to create a new repository from this template. Then
+you will need to update the `lambda-hello-world-python.yaml` to use your own
+s3 bucket and ssm variables. The IAM roles used in each account (dev, staging, prod)
+will all also need to be set. We configure them here as secrets to prevent leaking
+role and account information. Lastly, you'll want to add secrets for spacelift and
+also specify the spacelift stack name. Those allow the action to trigger updates.
+
 ---
 
 This project is part of our comprehensive ["SweetOps"](https://cpco.io/sweetops) approach towards DevOps.
