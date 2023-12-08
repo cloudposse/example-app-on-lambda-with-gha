@@ -64,10 +64,7 @@ description: |-
   
 
 introduction: |-
-  * [Docker](https://docs.docker.com/engine/reference/builder/) for developing, shipping, and running,
-  * [ECR](https://aws.amazon.com/ecr/) to store the Docker images
-  * [EKS](https://aws.amazon.com/lambda) for running application in scale
-  * [Helmfile](https://github.com/roboll/helmfile) as declarative deploy manifest
+  * [AWS Lambda](https://aws.amazon.com/lambda/) is a "serverless" compute service
 
 # Contributors to this project
 contributors:
