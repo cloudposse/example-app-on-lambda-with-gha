@@ -1,11 +1,4 @@
 
-<!-- markdownlint-disable -->
-# example-app-on-lambda [![Latest Release](https://img.shields.io/github/release/cloudposse/example-app-on-lambda-with-gha.svg)](https://github.com/cloudposse/example-app-on-lambda-with-gha/releases/latest) [![Slack Community](https://slack.cloudposse.com/badge.svg)](https://slack.cloudposse.com)
-<!-- markdownlint-restore -->
-
-[![README Header][readme_header_img]][readme_header_link]
-
-[![Cloud Posse][logo]](https://cpco.io/homepage)
 
 <!--
 
@@ -28,56 +21,68 @@
 
 -->
 
+<p align="center">
+<a href="https://cpco.io/homepage"><img src="https://cloudposse.com/logo-300x69.svg" alt="example-app-on-lambda" width="200"/></a><h3 align="center">example-app-on-lambda</h3>
+</p>
+
+<p align="center">
+  <i>This repository defines the example application for Lambda Deployments developed with <a href="https://cloudposse.com/">Cloud Posse</a>.
+</i>
+</p>
+<p align="center"><a href="https://github.com/cloudposse/example-app-on-lambda-with-gha/releases/latest"><img alt="Latest Release" src="https://img.shields.io/github/release/cloudposse/example-app-on-lambda-with-gha.svg"/></a><a href="https://slack.cloudposse.com"><img alt="Slack Community" src="https://slack.cloudposse.com/badge.svg"/></a>
+</p>
+
+<p align="center">
+        <a href="https://github.com/cloudposse/example-app-on-lambda-with-gha/deployments/dev">Dev</a>
+        - <a href="https://github.com/cloudposse/example-app-on-lambda-with-gha/deployments/staging">Staging</a>
+        - <a href="https://github.com/cloudposse/example-app-on-lambda-with-gha/deployments/prod">Prod</a>
+</p>
+
 Example Python application deployed on AWS Lambda with Github Actions.
 
 ## What
-This example has two primary workflows, `lambda-hello-world-python.yaml` and
-`promote-lambda-hello-world-python.yaml`. The first workflow is triggered on
-PRs and pushes to the `main` branch. It builds the application and puts it into an
-s3 bucket, then updates ssm variables for the application. The second workflow
-is triggered on a release. It does not build the application, but rather just copies
-the application from the staging s3 bucket to the production s3 bucket and updates
-the ssm variables for the application.
+This example uses three reusable workflows and one workflow for PRs, one for Main branch commits, and one for releases.
+ - The first workflow is triggered on a PR. It builds the application, publishes the zip to AWS S3 and updates ssm variables for the application.
+ - The second workflow is triggered on a commit to the main branch. It builds the application, publishes the zip to AWS S3 and updates ssm variables for the application.
+ - The third workflow is triggered on a release. It copies the application from the staging s3 bucket to the production s3 bucket and updates ssm variables for the application.
+
+The reusable workflows are prefixed with `reusable` and are located in the `.github/workflows` directory. They assist with the following:
+ - `reusable-publish-lambda-zip.yaml` - This workflow builds the application, publishes the zip to AWS S3 and updates ssm variables for the application.
+ - `reusable-deploy-lambda.yaml` - This workflow deploys the application to AWS Lambda using GitOps by triggering a stack.
+ - `reusable-promote-lambda-zip.yaml` - This workflow copies the application from the staging s3 bucket to the production s3 bucket and updates ssm variables for the application.
 
 ## How
 There are three supporting github actions that are prefixed with `reusable`. These
 break down the tasks for managing lambda applications.
 
+All of the workflows in this repository can be used directly in your own repository with little need for modification.
+The only changes that need to be made are to the `.github/config/app.yaml` file. This file contains the S3 bucket and
+IAM Roles that are used by the workflows.
+
 ## Getting Started
 To get started, you will need to create a new repository from this template. Then
-you will need to update the `lambda-hello-world-python.yaml` to use your own
+you will need to update the `.github/config/app.yaml` to use your own
 s3 bucket and ssm variables. The IAM roles used in each account (dev, staging, prod)
-will all also need to be set. We configure them here as secrets to prevent leaking
-role and account information. Lastly, you'll want to add secrets for spacelift and
-also specify the spacelift stack name. Those allow the action to trigger updates.
+will all also need to be set.
+
+The `cicd-role-arns` (IAM Role ARNs) can be created by using the `github-oidc-roles` component [found here](https://github.com/cloudposse/terraform-aws-components/tree/main/modules/github-oidc-role) deployed with the `lambda-cicd` policy.
+The `artifacts-role-arn` can also be created by the above component, it is deployed as the same account as the s3-bucket.
+The s3 bucket can be created by using the `s3-bucket` component [found here](https://github.com/cloudposse/terraform-aws-components/tree/main/modules/s3-bucket) with the following `privileged_principal_actions` policy:
+```yaml
+privileged_principal_actions:
+  - s3:PutObject
+  - s3:GetObject
+  - s3:ListBucket
+  - s3:GetBucketLocation
+```
+Similarly the bucket will need to trust the `artifacts-role-arn` in the `privileged_principal_arns` variable.
+example 
+```yaml
+        privileged_principal_arns:
+        - arn:aws:iam::01234567890:role/acme-core-gbl-artifacts-gha-iam-lambda-cicd: [""]
+```
 
 ---
-
-This project is part of our comprehensive ["SweetOps"](https://cpco.io/sweetops) approach towards DevOps.
-[<img align="right" title="Share via Email" src="https://docs.cloudposse.com/images/ionicons/ios-email-outline-2.0.1-16x16-999999.svg"/>][share_email]
-[<img align="right" title="Share on Google+" src="https://docs.cloudposse.com/images/ionicons/social-googleplus-outline-2.0.1-16x16-999999.svg" />][share_googleplus]
-[<img align="right" title="Share on Facebook" src="https://docs.cloudposse.com/images/ionicons/social-facebook-outline-2.0.1-16x16-999999.svg" />][share_facebook]
-[<img align="right" title="Share on Reddit" src="https://docs.cloudposse.com/images/ionicons/social-reddit-outline-2.0.1-16x16-999999.svg" />][share_reddit]
-[<img align="right" title="Share on LinkedIn" src="https://docs.cloudposse.com/images/ionicons/social-linkedin-outline-2.0.1-16x16-999999.svg" />][share_linkedin]
-[<img align="right" title="Share on Twitter" src="https://docs.cloudposse.com/images/ionicons/social-twitter-outline-2.0.1-16x16-999999.svg" />][share_twitter]
-
-
-
-
-It's 100% Open Source and licensed under the [APACHE2](LICENSE).
-
-
-
-
-
-
-
-
-
-
-
-
-## Introduction
 
 * [AWS Lambda](https://aws.amazon.com/lambda/) is a "serverless" compute service
 
@@ -89,34 +94,84 @@ It's 100% Open Source and licensed under the [APACHE2](LICENSE).
 
 
 
-
-
-
-
-## Share the Love
-
-Like this project? Please give it a ★ on [our GitHub](https://github.com/cloudposse/example-app-on-lambda-with-gha)! (it helps us **a lot**)
-
-Are you using this project or any of our other projects? Consider [leaving a testimonial][testimonial]. =)
-
-
-
 ## Related Projects
 
 Check out these related projects.
 
 - [github-actions-workflows](https://github.com/cloudposse/github-actions-workflows) - Reusable workflows for different types of projects
 
-## Help
 
-**Got a question?** We got answers.
 
-File a GitHub [issue](https://github.com/cloudposse/example-app-on-lambda-with-gha/issues), send us an [email][email] or join our [Slack Community][slack].
 
-[![README Commercial Support][readme_commercial_support_img]][readme_commercial_support_link]
 
-## DevOps Accelerator for Startups
+## ✨ Contributing
 
+This project is under active development, and we encourage contributions from our community. 
+Many thanks to our outstanding contributors:
+
+
+<a href="https://github.com/cloudposse/example-app-on-lambda-with-gha/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=cloudposse/example-app-on-lambda-with-gha&max=24" />
+</a>
+
+
+
+<!-- The below content is only for Cloudposse repos, this allows us to quickly add our standard footer to all repos -->
+---
+
+
+This project is part of our comprehensive ["SweetOps"](https://cpco.io/sweetops) approach towards DevOps.
+
+
+  It's 100% Open Source and licensed under the [APACHE2](LICENSE).
+
+
+
+
+
+
+
+
+
+    
+
+
+## ✨ Contributing
+
+### 🐛 Bug Reports & Feature Requests
+
+Please use the [issue tracker](https://github.com/cloudposse/example-app-on-lambda-with-gha/issues) to report any bugs or file feature requests.
+
+### 💻 Developing
+
+If you are interested in being a contributor and want to get involved in developing this project or [help out](https://cpco.io/help-out) with our other projects, we would love to hear from you! Shoot us an [email][email].
+
+In general, PRs are welcome. We follow the typical "fork-and-pull" Git workflow.
+
+1. **Fork** the repo on GitHub
+2. **Clone** the project to your own machine
+3. **Commit** changes to your own branch
+4. **Push** your work back up to your fork
+5. Submit a **Pull Request** so that we can review your changes
+
+**NOTE:** Be sure to merge the latest changes from "upstream" before making a pull request!
+
+### 🌎 Slack Community
+
+Join our [Open Source Community][slack] on Slack. It's **FREE** for everyone! Our "SweetOps" community is where you get to talk with others who share a similar vision for how to rollout and manage infrastructure. This is the best place to talk shop, ask questions, solicit feedback, and work together as a community to build totally *sweet* infrastructure.
+
+### 📰 Newsletter
+
+Sign up for [our newsletter][newsletter] that covers everything on our technology radar.  Receive updates on what we're up to on GitHub as well as awesome new projects we discover.
+
+### 📆 Office Hours <img src="https://img.cloudposse.com/fit-in/200x200/https://cloudposse.com/wp-content/uploads/2019/08/Powered-by-Zoom.png" align="right" />
+
+[Join us every Wednesday via Zoom][office_hours] for our weekly "Lunch & Learn" sessions. It's **FREE** for everyone!
+
+## About
+
+This project is maintained and funded by [Cloud Posse, LLC][website].
+<a href="https://cpco.io/homepage"><img src="https://cloudposse.com/logo-300x69.svg" align="right" /></a>
 
 We are a [**DevOps Accelerator**][commercial_support]. We'll help you build your cloud infrastructure from the ground up so you can own it. Then we'll show you how to operate it and stick around for as long as you need us.
 
@@ -137,145 +192,64 @@ We deliver 10x the value for a fraction of the cost of a full-time engineer. Our
 - **Code Reviews.** You'll receive constructive feedback on Pull Requests.
 - **Bug Fixes.** We'll rapidly work with you to fix any bugs in our projects.
 
-## Slack Community
+[![README Commercial Support][readme_commercial_support_img]][readme_commercial_support_link]
+  ## License
 
-Join our [Open Source Community][slack] on Slack. It's **FREE** for everyone! Our "SweetOps" community is where you get to talk with others who share a similar vision for how to rollout and manage infrastructure. This is the best place to talk shop, ask questions, solicit feedback, and work together as a community to build totally *sweet* infrastructure.
+  [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-## Discourse Forums
+  See [LICENSE](LICENSE) for full details.
 
-Participate in our [Discourse Forums][discourse]. Here you'll find answers to commonly asked questions. Most questions will be related to the enormous number of projects we support on our GitHub. Come here to collaborate on answers, find solutions, and get ideas about the products and services we value. It only takes a minute to get started! Just sign in with SSO using your GitHub account.
-
-## Newsletter
-
-Sign up for [our newsletter][newsletter] that covers everything on our technology radar.  Receive updates on what we're up to on GitHub as well as awesome new projects we discover.
-
-## Office Hours
-
-[Join us every Wednesday via Zoom][office_hours] for our weekly "Lunch & Learn" sessions. It's **FREE** for everyone!
-
-[![zoom](https://img.cloudposse.com/fit-in/200x200/https://cloudposse.com/wp-content/uploads/2019/08/Powered-by-Zoom.png")][office_hours]
-
-## Contributing
-
-### Bug Reports & Feature Requests
-
-Please use the [issue tracker](https://github.com/cloudposse/example-app-on-lambda-with-gha/issues) to report any bugs or file feature requests.
-
-### Developing
-
-If you are interested in being a contributor and want to get involved in developing this project or [help out](https://cpco.io/help-out) with our other projects, we would love to hear from you! Shoot us an [email][email].
-
-In general, PRs are welcome. We follow the typical "fork-and-pull" Git workflow.
-
- 1. **Fork** the repo on GitHub
- 2. **Clone** the project to your own machine
- 3. **Commit** changes to your own branch
- 4. **Push** your work back up to your fork
- 5. Submit a **Pull Request** so that we can review your changes
-
-**NOTE:** Be sure to merge the latest changes from "upstream" before making a pull request!
-
-
-## Copyright
-
-Copyright © 2017-2023 [Cloud Posse, LLC](https://cpco.io/copyright)
-
-
-
-## License
-
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-
-See [LICENSE](LICENSE) for full details.
-
-```text
-Licensed to the Apache Software Foundation (ASF) under one
-or more contributor license agreements.  See the NOTICE file
-distributed with this work for additional information
-regarding copyright ownership.  The ASF licenses this file
-to you under the Apache License, Version 2.0 (the
-"License"); you may not use this file except in compliance
-with the License.  You may obtain a copy of the License at
+  ```text
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
 
   https://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing,
-software distributed under the License is distributed on an
-"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-KIND, either express or implied.  See the License for the
-specific language governing permissions and limitations
-under the License.
-```
-
-
-
-
-
-
-
-
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License.
+  ```
 
 ## Trademarks
-
+  
 All other trademarks referenced herein are the property of their respective owners.
-
-## About
-
-This project is maintained and funded by [Cloud Posse, LLC][website]. Like it? Please let us know by [leaving a testimonial][testimonial]!
-
-[![Cloud Posse][logo]][website]
-
-We're a [DevOps Professional Services][hire] company based in Los Angeles, CA. We ❤️  [Open Source Software][we_love_open_source].
-
-We offer [paid support][commercial_support] on all of our projects.
-
-Check out [our other projects][github], [follow us on twitter][twitter], [apply for a job][jobs], or [hire us][hire] to help with your cloud strategy and implementation.
-
-
-
-### Contributors
-
-<!-- markdownlint-disable -->
-|  [![Jeremy White][dudymas_avatar]][dudymas_homepage]<br/>[Jeremy White][dudymas_homepage] | [![Benjamin Smith][benbentwo_avatar]][benbentwo_homepage]<br/>[Benjamin Smith][benbentwo_homepage] |
-|---|---|
-<!-- markdownlint-restore -->
-
-  [dudymas_homepage]: https://github.com/dudymas
-  [dudymas_avatar]: https://img.cloudposse.com/150x150/https://github.com/dudymas.png
-  [benbentwo_homepage]: https://github.com/benbentwo
-  [benbentwo_avatar]: https://img.cloudposse.com/150x150/https://github.com/benbentwo.png
-
+  
+  ---
+    
+  Copyright © 2017-2023 [Cloud Posse, LLC](https://cpco.io/copyright)
+    
 [![README Footer][readme_footer_img]][readme_footer_link]
 [![Beacon][beacon]][website]
 <!-- markdownlint-disable -->
-  [logo]: https://cloudposse.com/logo-300x69.svg
-  [docs]: https://cpco.io/docs?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=docs
-  [website]: https://cpco.io/homepage?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=website
-  [github]: https://cpco.io/github?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=github
-  [jobs]: https://cpco.io/jobs?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=jobs
-  [hire]: https://cpco.io/hire?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=hire
-  [slack]: https://cpco.io/slack?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=slack
-  [linkedin]: https://cpco.io/linkedin?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=linkedin
-  [twitter]: https://cpco.io/twitter?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=twitter
-  [testimonial]: https://cpco.io/leave-testimonial?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=testimonial
-  [office_hours]: https://cloudposse.com/office-hours?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=office_hours
-  [newsletter]: https://cpco.io/newsletter?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=newsletter
-  [discourse]: https://ask.sweetops.com/?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=discourse
-  [email]: https://cpco.io/email?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=email
-  [commercial_support]: https://cpco.io/commercial-support?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=commercial_support
-  [we_love_open_source]: https://cpco.io/we-love-open-source?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=we_love_open_source
-  [terraform_modules]: https://cpco.io/terraform-modules?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=terraform_modules
-  [readme_header_img]: https://cloudposse.com/readme/header/img
-  [readme_header_link]: https://cloudposse.com/readme/header/link?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=readme_header_link
-  [readme_footer_img]: https://cloudposse.com/readme/footer/img
-  [readme_footer_link]: https://cloudposse.com/readme/footer/link?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=readme_footer_link
-  [readme_commercial_support_img]: https://cloudposse.com/readme/commercial-support/img
-  [readme_commercial_support_link]: https://cloudposse.com/readme/commercial-support/link?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=readme_commercial_support_link
-  [share_twitter]: https://twitter.com/intent/tweet/?text=example-app-on-lambda&url=https://github.com/cloudposse/example-app-on-lambda-with-gha
-  [share_linkedin]: https://www.linkedin.com/shareArticle?mini=true&title=example-app-on-lambda&url=https://github.com/cloudposse/example-app-on-lambda-with-gha
-  [share_reddit]: https://reddit.com/submit/?url=https://github.com/cloudposse/example-app-on-lambda-with-gha
-  [share_facebook]: https://facebook.com/sharer/sharer.php?u=https://github.com/cloudposse/example-app-on-lambda-with-gha
-  [share_googleplus]: https://plus.google.com/share?url=https://github.com/cloudposse/example-app-on-lambda-with-gha
-  [share_email]: mailto:?subject=example-app-on-lambda&body=https://github.com/cloudposse/example-app-on-lambda-with-gha
-  [beacon]: https://ga-beacon.cloudposse.com/UA-76589703-4/cloudposse/example-app-on-lambda-with-gha?pixel&cs=github&cm=readme&an=example-app-on-lambda-with-gha
+[logo]: https://cloudposse.com/logo-300x69.svg
+[docs]: https://cpco.io/docs?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=docs
+[website]: https://cpco.io/homepage?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=website
+[github]: https://cpco.io/github?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=github
+[jobs]: https://cpco.io/jobs?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=jobs
+[hire]: https://cpco.io/hire?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=hire
+[slack]: https://cpco.io/slack?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=slack
+[twitter]: https://cpco.io/twitter?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=twitter
+[office_hours]: https://cloudposse.com/office-hours?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=office_hours
+[newsletter]: https://cpco.io/newsletter?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=newsletter
+[email]: https://cpco.io/email?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=email
+[commercial_support]: https://cpco.io/commercial-support?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=commercial_support
+[we_love_open_source]: https://cpco.io/we-love-open-source?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=we_love_open_source
+[terraform_modules]: https://cpco.io/terraform-modules?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=terraform_modules
+[readme_header_img]: https://cloudposse.com/readme/header/img
+[readme_header_link]: https://cloudposse.com/readme/header/link?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=readme_header_link
+[readme_footer_img]: https://cloudposse.com/readme/footer/img
+[readme_footer_link]: https://cloudposse.com/readme/footer/link?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=readme_footer_link
+[readme_commercial_support_img]: https://cloudposse.com/readme/commercial-support/img
+[readme_commercial_support_link]: https://cloudposse.com/readme/commercial-support/link?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/example-app-on-lambda-with-gha&utm_content=readme_commercial_support_link
+[beacon]: https://ga-beacon.cloudposse.com/UA-76589703-4/cloudposse/example-app-on-lambda-with-gha?pixel&cs=github&cm=readme&an=example-app-on-lambda-with-gha
 <!-- markdownlint-restore -->
+
+

@@ -1,28 +1,58 @@
-name: Deploy Lambda via Spacelift
+name: Deploy Lambda
 on:
   workflow_call:
     inputs:
-      function-name:
+      workflow_owner:
         required: true
         type: string
-      stack:
+      workflow_repo:
+        required: true
+        type: string
+      workflow_filename:
+        required: true
+        type: string
+      workflow_ref:
+        required: false
+        type: string
+        default: main
+      stack-name:
+        required: true
+        type: string
+      component-name:
+        required: true
+        type: string
+      runs-on-json:
         required: true
         type: string
     secrets:
-      spacelift-api-key-id:
+      gitops-token:
         required: true
-      spacelift-api-key-secret:
-        required: true
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   deploy:
-    runs-on: self-hosted
-    container: 252494810635.dkr.ecr.us-east-2.amazonaws.com/cloudposse/infra-live:latest
+    runs-on: ${{ fromJSON(inputs.runs-on-json) }}
     steps:
-    - name: Trigger Spacelift Stack Execution
-      env:
-        SPACELIFT_API_ENDPOINT: https://cloudposse.app.spacelift.io
-        SPACELIFT_API_KEY_ID: ${{ secrets.spacelift-api-key-id }}
-        SPACELIFT_API_KEY_SECRET: ${{ secrets.spacelift-api-key-secret }}
-      run: |
-        spacectl stack deploy --id ${{ inputs.stack }}-lambda-${{ inputs.function-name}} --tail
+      - name: Dispatch an action and get the run ID
+        uses: codex-/return-dispatch@v1
+        id: return_dispatch
+        with:
+          token: ${{ secrets.gitops-token }}
+          repo: ${{ inputs.workflow_repo }}
+          owner: ${{ inputs.workflow_owner }}
+          workflow: ${{ inputs.workflow_filename }}
+          ref: ${{ inputs.workflow_ref }}
+          workflow_inputs: '{ "stack": "${{ inputs.stack-name}}", "component": "${{ inputs.component-name }}", "apply": true }'
+      
+      - name: Await Run ID ${{ steps.return_dispatch.outputs.run_id }}
+        uses: Codex-/await-remote-run@v1.0.0
+        with:
+          token: ${{ secrets.gitops-token }}
+          repo: ${{ inputs.workflow_repo }}
+          owner: ${{ inputs.workflow_owner }}
+          run_id: ${{ steps.return_dispatch.outputs.run_id }}
+          run_timeout_seconds: 300 # Optional
+          poll_interval_ms: 5000 # Optional

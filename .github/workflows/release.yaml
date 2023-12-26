@@ -1,0 +1,53 @@
+name: "Promote Lambda to Prod: hello-world-python"
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  config:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+
+      - name: config
+        uses: blablacar/action-config-levels@dc8ddbca36875e29f870e53bcc1160b7000ff5b2
+        id: config
+        with:
+          output_properties: true
+          patterns: |
+            - .github/config/app.yaml
+    outputs:
+      config: ${{ steps.config.outputs.result }}
+
+  promote:
+    uses: ./.github/workflows/reusable-promote-lambda-zip.yaml
+    needs: config
+    with:
+      aws-region: ${{ fromJson(needs.config.outputs.config).aws-region }}
+      function-name: ${{ fromJson(needs.config.outputs.config).function-name }}
+      source-object-key: ${{ github.sha }}.zip
+      target-object-key: ${{ github.event.release.tag_name }}.zip
+      source-artifacts-bucket-and-prefix: ${{ fromJson(needs.config.outputs.config).artifacts-bucket }}/stage/staging/lambda
+      target-artifacts-bucket-and-prefix: ${{ fromJson(needs.config.outputs.config).artifacts-bucket }}/stage/prod/lambda
+      artifacts-role-arn: ${{ fromJson(needs.config.outputs.config).artifacts-role-arn }}
+      cicd-role-arns: ${{ toJson(fromJson(needs.config.outputs.config).cicd-role-arns) }}
+      runs-on-json: ${{ fromJson(needs.config.outputs.config).runs-on-json }}
+      environment: prod
+  deploy:
+    uses: ./.github/workflows/reusable-deploy-lambda.yaml
+    needs: [config, promote]
+    with:
+      stack-name: plat-use2-prod
+      component-name: lambda/hello-world-cicd
+      workflow_owner: ${{ fromJson(needs.config.outputs.config).workflow_owner }}
+      workflow_repo: ${{ fromJson(needs.config.outputs.config).workflow_repo }}
+      workflow_filename: ${{ fromJson(needs.config.outputs.config).workflow_filename }}
+      runs-on-json: ${{ fromJson(needs.config.outputs.config).runs-on-json }}
+    secrets:
+      gitops-token: ${{ secrets.PUBLIC_AND_PRIVATE_REPO_ACCESS_TOKEN_REPO }}
