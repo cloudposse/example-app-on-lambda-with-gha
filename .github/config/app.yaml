@@ -8,8 +8,8 @@ runs-on-json: '["self-hosted"]'
 aws-region: us-east-2
 function-name: hello-world-cicd # this is the name of the lambda function and stack
 source-folder: hello-world-python
-artifacts-bucket: cplive-core-ue2-auto-github-action-artifacts
-artifacts-prefix: stage/{0}/lambda
+artifacts-bucket: acme-core-ue2-auto-github-action-artifacts
+artifacts-prefix: stage/{0}/lambda # {0} replaced by environment
 artifacts-role-arn: arn:aws:iam::01234567890:role/acme-core-gbl-artifacts-gha-iam-lambda-cicd
 cicd-role-arns:
   prod: arn:aws:iam::01234567890:role/acme-plat-gbl-prod-gha-iam-lambda-cicd
