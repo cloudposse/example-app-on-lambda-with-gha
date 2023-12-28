@@ -2,8 +2,7 @@ workflow_owner: cloudposse
 workflow_repo: infra-test
 workflow_filename: atmos-terraform-dispatch.yaml
 
-runs-on-json: '["self-hosted"]'
-
+runs-on-json: '["self-hosted-default"]'
 
 aws-region: us-east-2
 function-name: hello-world-cicd # this is the name of the lambda function and stack

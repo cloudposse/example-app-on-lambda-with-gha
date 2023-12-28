@@ -10,7 +10,9 @@ permissions:
 
 jobs:
   config:
-    runs-on: self-hosted-default
+    runs-on:
+      - "self-hosted-default"
+
     steps:
       - name: Checkout
         uses: actions/checkout@master
