@@ -1,5 +1,5 @@
 workflow_owner: cloudposse
-workflow_repo: infra-live
+workflow_repo: infra-test
 workflow_filename: atmos-terraform-dispatch.yaml
 
 runs-on-json: '["self-hosted"]'
@@ -8,11 +8,11 @@ runs-on-json: '["self-hosted"]'
 aws-region: us-east-2
 function-name: hello-world-cicd # this is the name of the lambda function and stack
 source-folder: hello-world-python
-artifacts-bucket: acme-core-ue2-auto-github-action-artifacts
+artifacts-bucket: cptest-core-gbl-artifacts-github-action-artifacts
 artifacts-prefix: stage/{0}/lambda # {0} replaced by environment
-artifacts-role-arn: arn:aws:iam::01234567890:role/acme-core-gbl-artifacts-gha-iam-lambda-cicd
+artifacts-role-arn: arn:aws:iam::095356423315:role/cptest-core-gbl-artifacts-gha-iam-lambda-cicd
 cicd-role-arns:
-  prod: arn:aws:iam::01234567890:role/acme-plat-gbl-prod-gha-iam-lambda-cicd
-  staging: arn:aws:iam::01234567890:role/acme-plat-gbl-staging-gha-iam-lambda-cicd
-  sandbox: arn:aws:iam::01234567890:role/acme-plat-gbl-sandbox-gha-iam-lambda-cicd
-  dev: arn:aws:iam::01234567890:role/acme-plat-gbl-dev-gha-iam-lambda-cicd
+  prod: arn:aws:iam::500863271350:role/cptest-plat-gbl-prod-gha-iam-lambda-cicd
+  staging: arn:aws:iam::204944560748:role/cptest-plat-gbl-staging-gha-iam-lambda-cicd
+  sandbox: arn:aws:iam::630114703016:role/cptest-plat-gbl-sandbox-gha-iam-lambda-cicd
+  dev: arn:aws:iam::142885371614:role/cptest-plat-gbl-dev-gha-iam-lambda-cicd
