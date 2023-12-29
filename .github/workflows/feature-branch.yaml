@@ -54,4 +54,4 @@ jobs:
       workflow_filename: ${{ fromJson(needs.config.outputs.config).workflow_filename }}
       runs-on-json: ${{ fromJson(needs.config.outputs.config).runs-on-json }}
     secrets:
-      gitops-token: ${{ secrets.PUBLIC_AND_PRIVATE_REPO_ACCESS_TOKEN_REPO }}
+      gitops-token: ${{ secrets.PUBLIC_AND_PRIVATE_REPO_ACCESS_TOKEN }}
