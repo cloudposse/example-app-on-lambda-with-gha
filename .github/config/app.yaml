@@ -4,6 +4,10 @@ workflow_filename: atmos-terraform-dispatch.yaml
 
 runs-on-json: '["ubuntu-latest"]'
 
+tenant: plat
+environment: ue2
+component_name: lambda/hello-world-cicd
+
 aws-region: us-east-2
 function-name: hello-world-cicd # this is the name of the lambda function and stack
 source-folder: hello-world-python

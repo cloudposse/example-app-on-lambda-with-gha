@@ -48,8 +48,8 @@ jobs:
     uses: ./.github/workflows/reusable-deploy-lambda.yaml
     needs: [config, publish]
     with:
-      stack-name: plat-use2-staging
-      component-name: lambda/hello-world-cicd
+      stack-name: ${{ fromJson(needs.config.outputs.config).tenant }}-${{ fromJson(needs.config.outputs.config).environment }}-staging
+      component-name: ${{ fromJson(needs.config.outputs.config).component_name }}
       workflow_owner: ${{ fromJson(needs.config.outputs.config).workflow_owner }}
       workflow_repo: ${{ fromJson(needs.config.outputs.config).workflow_repo }}
       workflow_filename: ${{ fromJson(needs.config.outputs.config).workflow_filename }}
