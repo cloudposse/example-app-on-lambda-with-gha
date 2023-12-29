@@ -11,7 +11,7 @@ permissions:
 jobs:
   config:
     runs-on:
-      - "self-hosted-default"
+      - "ubuntu-latest"
 
     steps:
       - name: Checkout
