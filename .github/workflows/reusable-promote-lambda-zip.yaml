@@ -1,76 +1,78 @@
-name: Publish Lambda Function
+name: Promote Lambda Function
 on:
   workflow_call:
     inputs:
       function-name:
         required: true
         type: string
-      artifacts-bucket-and-prefix:
-        required: true
-        type: string
       aws-region:
         required: true
         type: string
-    secrets:
-      cicd-role-arn:
+      source-object-key:
         required: true
-      staging-role-arn:
+        type: string
+      target-object-key:
         required: true
-      prod-role-arn:
+        type: string
+      source-artifacts-bucket-and-prefix:
         required: true
-
+        type: string
+      target-artifacts-bucket-and-prefix:
+        required: true
+        type: string
+      artifacts-role-arn:
+        required: true
+        type: string
+      cicd-role-arns:
+        required: true
+        type: string
+      runs-on-json:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
 permissions:
   id-token: write
   contents: read
 
 jobs:
   publish:
-    runs-on: self-hosted
+    runs-on: ${{ fromJSON(inputs.runs-on-json) }}
     steps:
-    - name: Configure AWS credentials for 'cicd' role
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        role-to-assume: ${{ inputs.cicd-role-arn }}
-        aws-region: ${{ inputs.aws-region }}
-    - name: Configure AWS credentials for source stage
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-        aws-session-token: ${{ env.AWS_SESSION_TOKEN }}
-        role-duration-seconds: 3000
-        role-skip-session-tagging: true
-        role-to-assume: ${{ inputs.staging-role-arn }}
-        aws-region: ${{ inputs.aws-region }}
-    - name: Checkout
-      uses: actions/checkout@master
-    - name: Get tag from SSM
-      id: get-tag-from-ssm
-      run: |
-        TAG=`aws ssm get-parameter --name /lambda/${{ inputs.function-name }}/tag | jq -r .Parameter.Value`
-        echo "::set-output name=tag::$TAG"
-    - name: Copy Lambda to local
-      run: |
-        aws s3 cp s3://${{ inputs.artifacts-bucket-and-prefix }}/${{ inputs.function-name }}/${{ steps.get-tag-from-ssm.outputs.tag }}.zip .
-    - name: Configure AWS credentials for 'cicd' role
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        role-to-assume: ${{ inputs.cicd-role-arn }}
-        aws-region: ${{ inputs.aws-region }}
-    - name: Configure AWS credentials for destination stage
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-        aws-session-token: ${{ env.AWS_SESSION_TOKEN }}
-        role-duration-seconds: 3000
-        role-skip-session-tagging: true
-        role-to-assume: ${{ inputs.prod-role-arn }}
-        aws-region: ${{ inputs.aws-region }}
-    - name: Copy Lambda to destination bucket
-      run: |
-        aws s3 cp ${{ steps.get-tag-from-ssm.outputs.tag }}.zip \
-          s3://${{ inputs.artifacts-bucket-and-prefix }}/${{ inputs.function-name }}/ --sse
-    - name: Write tag to SSM
-      run: |
-        aws ssm put-parameter --name /lambda/${{ inputs.function-name}}/tag --type String --value ${{ steps.get-tag-from-ssm.outputs.tag }} --overwrite
+      - name: Checkout
+        uses: actions/checkout@master
+
+      - name: Configure AWS credentials for artifacts role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.artifacts-role-arn }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Copy Lambda to local
+        env:
+          SOURCE_OBJECT_URI: s3://${{ inputs.source-artifacts-bucket-and-prefix }}/${{ inputs.function-name }}/${{ inputs.source-object-key }}
+          TARGET_OBJECT_URI: s3://${{ inputs.target-artifacts-bucket-and-prefix }}/${{ inputs.function-name }}/${{ inputs.target-object-key }}
+        run: |
+          aws s3 cp --sse AES256 $SOURCE_OBJECT_URI $TARGET_OBJECT_URI
+      
+      - uses: cloudposse/github-action-jq@main
+        id: cicd-role-arns
+        with:
+          compact: true
+          input: ${{ inputs.cicd-role-arns }}
+          raw-output: true
+          script: |-
+            ."${{ inputs.environment }}"
+
+      - name: Configure AWS credentials for 'cicd' role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-chaining: false
+          unset-current-credentials: true
+          role-to-assume: ${{ steps.cicd-role-arns.outputs.output }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Write tag to SSM
+        run: |
+          aws ssm put-parameter --name /lambda/${{ inputs.function-name }}/tag --type String --value ${{ inputs.target-object-key }} --overwrite

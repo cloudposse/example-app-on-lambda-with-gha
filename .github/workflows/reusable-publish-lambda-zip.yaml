@@ -8,37 +8,94 @@ on:
       source-folder:
         required: true
         type: string
-      artifacts-bucket-and-prefix:
+      artifacts-bucket:
+        required: true
+        type: string
+      artifacts-prefix:
+        required: true
+        type: string
+      artifacts-role-arn:
+        required: true
+        type: string
+      object-key:
         required: true
         type: string
       aws-region:
         required: true
         type: string
-    secrets:
-      cicd-role-arn:
+      cicd-role-arns:
         required: true
-
+        type: string
+      environment:
+        required: true
+        type: string
+      runs-on-json:
+        required: true
+        type: string
+    outputs:
+      lambda-version:
+        description: The version of the lambda that was published
+        value: ${{ jobs.publish.outputs.lambda-version }}
+      lambda-version-ssm-path:
+        description: The SSM path to the version of the lambda that was published
+        value: ${{ jobs.publish.outputs.lambda-version-ssm-path }}
+      lambda-bucket:
+        description: The S3 bucket where the lambda was published
+        value: ${{ jobs.publish.outputs.lambda-bucket }}
+      lambda-key:
+        description: The S3 key where the lambda was published
+        value: ${{ jobs.publish.outputs.lambda-key }}
+        
 permissions:
   id-token: write
   contents: read
 
 jobs:
   publish:
-    runs-on: self-hosted
+    runs-on: ${{ fromJSON(inputs.runs-on-json) }}
     steps:
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        role-to-assume: ${{ inputs.cicd-role-arn }}
-        aws-region: ${{ inputs.aws-region }}
-    - name: Checkout
-      uses: actions/checkout@master
-    - name: Package Lambda
-      run: |
-        cd ${{ inputs.source-folder }} && zip ${{ github.sha }}.zip *
-    - name: Push Lambda
-      run: |
-        aws s3 cp ${{ inputs.source-folder }}/${{ github.sha }}.zip s3://${{ inputs.artifacts-bucket-and-prefix }}/${{ inputs.function-name }}/ --sse
-    - name: Write tag to SSM
-      run: |
-        aws ssm put-parameter --name /lambda/${{ inputs.function-name}}/tag --type String --value ${{ github.sha }} --overwrite
+      - uses: cloudposse/github-action-jq@main
+        id: cicd-role-arns
+        with:
+          compact: true
+          input: ${{ inputs.cicd-role-arns }}
+          raw-output: true
+          script: |-
+           ."${{ inputs.environment }}"
+
+      - name: Checkout
+        uses: actions/checkout@master
+
+      - name: Build Project
+        run: |
+          make build
+
+      - name: Package Lambda
+        run: |
+          cd ${{ inputs.source-folder }} && zip ${{ inputs.object-key }} *
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.artifacts-role-arn }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Push Lambda
+        run: |
+          aws s3 cp ${{ inputs.source-folder }}/${{ inputs.object-key }} s3://${{ inputs.artifacts-bucket }}/${{ format(inputs.artifacts-prefix, inputs.environment) }}/${{ inputs.function-name }}/ --sse
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ steps.cicd-role-arns.outputs.output }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Write tag to SSM
+        run: |
+          aws ssm put-parameter --name /lambda/${{ inputs.function-name}}/tag --type String --value ${{ inputs.object-key }} --overwrite
+    
+    outputs:
+      lambda-version: ${{ github.sha }}
+      lambda-version-ssm-path: /lambda/${{ inputs.function-name}}/tag
+      lambda-bucket: s3://${{ inputs.artifacts-bucket }}
+      lambda-key: ${{ format(inputs.artifacts-prefix, inputs.environment) }}/${{ inputs.function-name }}/${{ github.sha }}.zip

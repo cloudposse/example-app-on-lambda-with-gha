@@ -1,4 +1,5 @@
 ---
+
 #
 # This is the canonical configuration for the `README.md`
 # Run `make readme` to rebuild the `README.md`
@@ -6,6 +7,9 @@
 
 # Name of this project
 name: example-app-on-lambda
+
+header: |
+  This repository defines the example application for Lambda Deployments developed with <a href="https://cloudposse.com/">Cloud Posse</a>.
 
 # Tags of this project
 tags:
@@ -23,6 +27,11 @@ license: "APACHE2"
 # Canonical GitHub repo
 github_repo: cloudposse/example-app-on-lambda-with-gha
 
+environments:
+  - name: dev
+  - name: staging
+  - name: prod
+
 # Badges to display
 badges:
   - name: "Latest Release"
@@ -34,34 +43,55 @@ badges:
 
 related:
   - name: "github-actions-workflows"
-    description: "Reusable workflows for different types of projects"
     url: "https://github.com/cloudposse/github-actions-workflows"
+    description: "Reusable workflows for different types of projects"
 
 # Short description of this project
 description: |-
+  
   Example Python application deployed on AWS Lambda with Github Actions.
   
   ## What
-  This example has two primary workflows, `lambda-hello-world-python.yaml` and
-  `promote-lambda-hello-world-python.yaml`. The first workflow is triggered on
-  PRs and pushes to the `main` branch. It builds the application and puts it into an
-  s3 bucket, then updates ssm variables for the application. The second workflow
-  is triggered on a release. It does not build the application, but rather just copies
-  the application from the staging s3 bucket to the production s3 bucket and updates
-  the ssm variables for the application.
+  This example uses three reusable workflows and one workflow for PRs, one for Main branch commits, and one for releases.
+   - The first workflow is triggered on a PR. It builds the application, publishes the zip to AWS S3 and updates ssm variables for the application.
+   - The second workflow is triggered on a commit to the main branch. It builds the application, publishes the zip to AWS S3 and updates ssm variables for the application.
+   - The third workflow is triggered on a release. It copies the application from the staging s3 bucket to the production s3 bucket and updates ssm variables for the application.
+  
+  The reusable workflows are prefixed with `reusable` and are located in the `.github/workflows` directory. They assist with the following:
+   - `reusable-publish-lambda-zip.yaml` - This workflow builds the application, publishes the zip to AWS S3 and updates ssm variables for the application.
+   - `reusable-deploy-lambda.yaml` - This workflow deploys the application to AWS Lambda using GitOps by triggering a stack.
+   - `reusable-promote-lambda-zip.yaml` - This workflow copies the application from the staging s3 bucket to the production s3 bucket and updates ssm variables for the application.
 
   ## How
   There are three supporting github actions that are prefixed with `reusable`. These
   break down the tasks for managing lambda applications.
+  
+  All of the workflows in this repository can be used directly in your own repository with little need for modification.
+  The only changes that need to be made are to the `.github/config/app.yaml` file. This file contains the S3 bucket and
+  IAM Roles that are used by the workflows.
 
   ## Getting Started
   To get started, you will need to create a new repository from this template. Then
-  you will need to update the `lambda-hello-world-python.yaml` to use your own
+  you will need to update the `.github/config/app.yaml` to use your own
   s3 bucket and ssm variables. The IAM roles used in each account (dev, staging, prod)
-  will all also need to be set. We configure them here as secrets to prevent leaking
-  role and account information. Lastly, you'll want to add secrets for spacelift and
-  also specify the spacelift stack name. Those allow the action to trigger updates.
+  will all also need to be set.
   
+  The `cicd-role-arns` (IAM Role ARNs) can be created by using the `github-oidc-roles` component [found here](https://github.com/cloudposse/terraform-aws-components/tree/main/modules/github-oidc-role) deployed with the `lambda-cicd` policy.
+  The `artifacts-role-arn` can also be created by the above component, it is deployed as the same account as the s3-bucket.
+  The s3 bucket can be created by using the `s3-bucket` component [found here](https://github.com/cloudposse/terraform-aws-components/tree/main/modules/s3-bucket) with the following `privileged_principal_actions` policy:
+  ```yaml
+  privileged_principal_actions:
+    - s3:PutObject
+    - s3:GetObject
+    - s3:ListBucket
+    - s3:GetBucketLocation
+  ```
+  Similarly the bucket will need to trust the `artifacts-role-arn` in the `privileged_principal_arns` variable.
+  example 
+  ```yaml
+          privileged_principal_arns:
+          - arn:aws:iam::01234567890:role/acme-core-gbl-artifacts-gha-iam-lambda-cicd: [""]
+  ```
 
 introduction: |-
   * [AWS Lambda](https://aws.amazon.com/lambda/) is a "serverless" compute service
